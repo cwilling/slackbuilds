@@ -3,8 +3,10 @@ VERSION="0.23.0"
 HOMEPAGE="https://github.com/ollama/ollama"
 DOWNLOAD="UNSUPPORTED"
 MD5SUM=""
-DOWNLOAD_x86_64="https://github.com/ollama/ollama/archive/v0.23.0/ollama-0.23.0.tar.gz"
-MD5SUM_x86_64="57321325176fb2dc459af82bde6f6928"
+DOWNLOAD_x86_64="https://github.com/ollama/ollama/archive/v0.23.0/ollama-0.23.0.tar.gz \
+        https://sourceforge.net/projects/slackbuildsdirectlinks/files/ollama/ollama-0.23.0-vendor.tar.xz"
+MD5SUM_x86_64="57321325176fb2dc459af82bde6f6928 \
+        56f1b339cdfd45c9bc2bbc5310fc2768"
 REQUIRES="google-go-lang"
 MAINTAINER="Ruoh-Shoei LIN"
 EMAIL="lin.ruohshoei+sbo@gmail.com"

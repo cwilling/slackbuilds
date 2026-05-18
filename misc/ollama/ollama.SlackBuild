@@ -26,7 +26,7 @@ cd $(dirname $0) ; CWD=$(pwd)
 
 PRGNAM=ollama
 VERSION=${VERSION:-0.23.0}
-BUILD=${BUILD:-1}
+BUILD=${BUILD:-2}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
 
@@ -61,6 +61,9 @@ else
   LIBDIRSUFFIX=""
 fi
 
+# Ensure google-go-lang is used
+. /etc/profile.d/go.sh
+
 set -e
 
 rm -rf $PKG
@@ -79,17 +82,41 @@ find -L . \
 # disabling ggml-vulkan until we have vulkan-sdk >= 1.4
 sed -i '/find_package(Vulkan)/ d' CMakeLists.txt
 
+cuda_archs=""
+if [ "${CUDA:-OFF}" = "ON" ]; then
+  cuda_archs="$(nvcc --list-gpu-code |sed -e 's/sm_//' |paste -sd ';')"
+fi
+
+export GOPATH="$TMP"
+export GOFLAGS="-buildmode=pie -trimpath -mod=vendor"
+export CGO_LDFLAGS="${LDFLAGS}"
+export CGO_CFLAGS="${SLKCFLAGS}"
+export CGO_CPPFLAGS="${SLKCFLAGS}"
+
+# Generate a vendor tarball if not found
+if [ -r "$CWD"/"$PRGNAM"-"${VERSION}"-vendor.tar.xz ]; then
+  echo -n "Unpacking vendor tarball ... "
+  tar xf "$CWD"/"$PRGNAM"-"$VERSION"-vendor.tar.xz
+  echo "Done"
+else
+  echo "Creating vendorball ... "
+  go mod tidy
+  go mod vendor
+  tar cvf - vendor | xz -c > "$CWD"/"$PRGNAM"-"$VERSION"-vendor.tar.xz
+  md5sum "$CWD"/"$PRGNAM"-"$VERSION"-vendor.tar.xz
+  echo "Created vendorball - save it somewhere and run this script again"
+  exit 0
+fi
+
 cmake -B build \
   -DCMAKE_C_FLAGS:STRING="$SLKCFLAGS" \
   -DCMAKE_CXX_FLAGS:STRING="$SLKCFLAGS" \
   -DCMAKE_INSTALL_PREFIX=/usr \
-  -DMAN_INSTALL_DIR=/usr/man \
+  -DCMAKE_CUDA_ARCHITECTURES=$cuda_archs \
   -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 
-export GOPATH="$TMP/$PRGNAM-$VERSION"
-export GOFLAGS="-buildmode=pie -trimpath -mod=readonly -modcacherw '-ldflags=-linkmode=external -X=github.com/ollama/ollama/version.Version=$VERSION -X=github.com/ollama/ollama/server.mode=release'"
-go build .
+go build -x .
 install -Dm755 ollama "$PKG/usr/bin/ollama"
 
 DESTDIR=$PKG cmake --install build --component CPU

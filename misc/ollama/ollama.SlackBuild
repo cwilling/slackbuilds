@@ -69,6 +69,16 @@ cd $TMP
 rm -rf $PRGNAM-$VERSION
 tar xvf $CWD/$PRGNAM-$VERSION.tar.gz
 cd $PRGNAM-$VERSION
+
+sed -i \
+  -e "/set(OLLAMA_BUILD_DIR/s/lib/lib$LIBDIRSUFFIX/" \
+  -e "s|{CMAKE_INSTALL_PREFIX}/lib|{CMAKE_INSTALL_PREFIX}/lib$LIBDIRSUFFIX|" \
+  CMakeLists.txt
+sed -i -e "s/\"..\", \"lib\"/\"..\", \"lib$LIBDIRSUFFIX\"/" \
+  ml/path.go
+sed -i -e "s|lib/ollama|lib$LIBDIRSUFFIX/ollama|" \
+  ml/backend/ggml/ggml/src/ggml.go
+
 chown -R root:root .
 find -L . \
  \( -perm 777 -o -perm 775 -o -perm 750 -o -perm 711 -o -perm 555 \
